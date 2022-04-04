@@ -3,7 +3,7 @@ public:
     int findMaxValueOfEquation(vector<vector<int>>& points, int k) 
     {
         priority_queue<pair<int, int>> pq;
-        int ans = 0;
+        int ans = INT_MIN;
         
         for (int i=0;i<points.size();i++)
         {
