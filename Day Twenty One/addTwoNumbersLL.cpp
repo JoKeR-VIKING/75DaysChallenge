@@ -10,94 +10,57 @@
  */
 class Solution {
 public:
-    void helpAdd(ListNode* l, stack<int>& stk)
+    int getLength(ListNode* head)
     {
-        if (l == NULL)
-            return;
+        if (head == NULL)
+            return 0;
         
-        stk.push(l -> val);
-        helpAdd(l -> next, stk);
+        return 1 + getLength(head -> next);
     }
     
-    ListNode* addTwoNumbers(ListNode* l1, ListNode* l2)
+    void addition(ListNode* l1, ListNode* l2, int& carry)
     {
-        stack<int> stk1, stk2, stk3;
+        if (l1 == NULL)
+            return;
+        
+        addition(l1 -> next, l2 -> next, carry);
+        int sum = l1 -> val + l2 -> val + carry;
+        
+        l1 -> val = sum % 10;
+        carry = sum / 10;
+    }
+    
+    ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) 
+    {
+        int size1 = getLength(l1);
+        int size2 = getLength(l2);
+        
+        while (size1 > size2)
+        {
+            ListNode* newNode = new ListNode(0);
+            newNode -> next = l2;
+            l2 = newNode;
+            size2++;
+        }
+        
+        while (size2 > size1)
+        {
+            ListNode* newNode = new ListNode(0);
+            newNode -> next = l1;
+            l1 = newNode;
+            size1++;
+        }
+        
         int carry = 0;
-        ListNode* head;
+        addition(l1, l2, carry);
         
-        helpAdd(l1, stk1);
-        helpAdd(l2, stk2);
-        
-        while (!stk1.empty() && !stk2.empty())
+        if (carry > 0)
         {
-            if (stk1.top() + stk2.top() + carry > 9)
-            {
-                stk3.push((stk1.top() + stk2.top() + carry) % 10);
-                carry = 1;
-            }
-            else
-            {
-                stk3.push(stk1.top() + stk2.top() + carry);
-                carry = 0;
-            }
-            
-            stk1.pop();
-            stk2.pop();
+            ListNode* newNode = new ListNode(carry);
+            newNode -> next = l1;
+            l1 = newNode;
         }
         
-        while (!stk1.empty())
-        {
-            if (stk1.top() + carry > 9)
-            {
-                stk3.push((stk1.top() + carry) % 10);
-                carry = 1;
-            }
-            else
-            {
-                stk3.push(stk1.top() + carry);
-                carry = 0;
-            }
-            
-            stk1.pop();
-        }
-        
-        while (!stk2.empty())
-        {
-            if (stk2.top() + carry > 9)
-            {
-                stk3.push((stk2.top() + carry) % 10);
-                carry = 1;
-            }
-            else
-            {
-                stk3.push(stk2.top() + carry);
-                carry = 0;
-            }
-            
-            stk2.pop();
-        }
-        
-        ListNode* temp;
-        
-        if (carry == 1)
-        {
-            head = new ListNode(1);
-            temp = head;
-        }
-        else
-        {
-            head = new ListNode(stk3.top());
-            stk3.pop();
-            temp = head;
-        }
-        
-        while (!stk3.empty())
-        {
-            temp -> next = new ListNode(stk3.top());
-            stk3.pop();
-            temp = temp -> next;
-        }
-        
-        return head;
+        return l1;
     }
 };
