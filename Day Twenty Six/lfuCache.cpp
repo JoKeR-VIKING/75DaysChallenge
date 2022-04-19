@@ -1,72 +1,114 @@
-class LFUCache {
+class Node
+{
 public:
-	LFUCache(int capacity) : capacity(capacity) { }
-
-	int get(int key) {
-		if (capacity == 0) return -1;
-		if (m.end() == m.find(key)) return -1;
-		list<Item>::iterator item_it = m[key];
-		refresh(item_it);
-		return item_it->value;
-	}
-
-	void put(int key, int value) {
-		if (capacity == 0) return;
-		if (m.end() == m.find(key)) {
-			if (m.size() == capacity) {
-				// remove least frequently used
-				int key_to_remove = l.begin()->item.back().key;
-				l.begin()->item.pop_back();
-				if (l.begin()->item.empty())
-				    l.pop_front();
-				m.erase(key_to_remove);
-			}
-			if (l.empty()) // cache is empty
-			    l.push_front(Frequency(1)); 
-			if (l.front().frequency > 1) // no keys of frequency 1
-			    l.push_front(Frequency(1)); 
-			l.begin()->item.push_front(Item(key, value, l.begin()));
-			m[key] = l.begin()->item.begin();
-		} else {
-			list<Item>::iterator item_it = m[key];
-			item_it->value = value;
-			refresh(item_it);
-		}
-	}
-
-private:
-	struct Frequency;
-	struct Item;
-	void refresh(list<Item>::iterator item_it) {
-		list<Frequency>::iterator frequency_it = item_it->frequency_it;
-		int frequency = frequency_it->frequency;
-		list<Frequency>::iterator plus_one_frequency_it = frequency_it;
-		++plus_one_frequency_it;
-		if (plus_one_frequency_it == l.end())
-            l.push_back(Frequency(frequency + 1));
-		else if (plus_one_frequency_it->frequency != frequency + 1) 
-            l.insert(plus_one_frequency_it, Frequency(frequency + 1));
-		plus_one_frequency_it = frequency_it;
-		++plus_one_frequency_it;
-		plus_one_frequency_it->item.splice(plus_one_frequency_it->item.begin(), frequency_it->item, item_it);
-		if (frequency_it->item.empty())
-		    l.erase(frequency_it);
-		item_it->frequency_it = plus_one_frequency_it;
-	}
-
-private:
-	struct Item {
-		Item(int key, int value, list<Frequency>::iterator it) : key(key), value(value), frequency_it(it) {}
-		int key;
-		int value;
-		list<Frequency>::iterator frequency_it;
-	};
-	struct Frequency {
-		Frequency(int value) : frequency(value) {}
-		int frequency;
-		list<Item> item;  // list of <key, value, list<Frequency>::iterator>
-	};
-	list<Frequency> l;
-	unordered_map<int, list<Item>::iterator> m;
-	size_t capacity;
+    int key, value;
+    Node* next, *prev;
+    
+    Node(int key, int value)
+    {
+        this -> key = key;
+        this -> value = value;
+        next = prev = NULL;
+    }
 };
+
+class LFUCache 
+{
+private:
+    int capacity;
+    unordered_map<int, pair<int, Node*>> cache;
+    map<int, pair<Node*, Node*>> freq;
+public:
+    LFUCache(int capacity) 
+    {
+        this -> capacity = capacity;
+    }
+    
+    int get(int key) 
+    {
+        if (!cache.count(key))
+            return -1;
+        
+        Node* temp = cache[key].second;
+        int currFreq = cache[key].first;
+        
+        if (temp -> prev -> key == -1 && temp -> next -> key == -1)
+            freq.erase(currFreq);
+        else
+        {
+            temp -> next -> prev = temp -> prev;
+            temp -> prev -> next = temp -> next;   
+        }
+        
+        if (!freq.count(currFreq + 1))
+        {
+            freq[currFreq + 1] = {new Node(-1, -1), new Node(-1, -1)};
+            freq[currFreq + 1].first -> next = freq[currFreq + 1].second;
+            freq[currFreq + 1].second -> prev = freq[currFreq + 1].first;
+        }
+        
+        Node* head = freq[currFreq + 1].first, *tail = freq[currFreq + 1].second;
+        
+        temp -> next = head -> next;
+        head -> next = temp;
+        temp -> prev = head;
+        temp -> next -> prev = temp;
+        
+        cache[key].first++;
+        return temp -> value;
+    }
+    
+    void put(int key, int value) 
+    {
+        if (capacity == 0)
+            return;
+        
+        if (cache.count(key))
+        {
+            get(key);
+            cache[key].second -> value = value;
+            return;
+        }
+        
+        if (cache.size() == capacity)
+        {
+            Node* head = freq.begin() -> second.first, *tail = freq.begin() -> second.second;
+            Node* temp = tail -> prev;
+            
+            if (temp -> prev -> key == -1 && temp -> next -> key == -1)
+                freq.erase(freq.begin() -> first);
+            else
+            {
+                temp -> prev -> next = temp -> next;
+                temp -> next -> prev = temp -> prev;
+            }
+            
+            cache.erase(temp -> key);
+            delete temp;
+        }
+        
+        if (!freq.count(1))
+        {
+            freq[1] = {new Node(-1, -1), new Node(-1, -1)};
+            freq[1].first -> next = freq[1].second;
+            freq[1].second -> prev = freq[1].first;
+        }
+        
+        Node* head = freq[1].first, *tail = freq[1].second;
+        Node* temp = new Node(key, value);
+        
+        temp -> next = head -> next;
+        head -> next = temp;
+        temp -> prev = head;
+        temp -> next -> prev = temp;
+        
+        cache[key] = {1, temp};
+    }
+};
+
+/**
+ * Your LFUCache object will be instantiated and called as such:
+ * LFUCache* obj = new LFUCache(capacity);
+ * int param_1 = obj->get(key);
+ * obj->put(key,value);
+ */
