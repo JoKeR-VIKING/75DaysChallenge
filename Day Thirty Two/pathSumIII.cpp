@@ -11,7 +11,7 @@
  */
 class Solution {
 public:
-    void backTrack(TreeNode* root, int targetSum, int& res)
+    void backTrack(TreeNode* root, long long targetSum, int& res)
     {
         if (root == NULL)
             return;
@@ -22,7 +22,7 @@ public:
         backTrack(root -> right, targetSum - root -> val, res);
     }
     
-    void getPathSum(TreeNode* root, int targetSum, int& res)
+    void getPathSum(TreeNode* root, long long targetSum, int& res)
     {
         if (root == NULL)
             return;
